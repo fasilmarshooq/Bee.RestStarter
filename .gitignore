@@ -1,0 +1,7 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/.vs/Bee.RestStarter
+/Bee.RestStarter/bin/Debug
+/Bee.RestStarter/obj
