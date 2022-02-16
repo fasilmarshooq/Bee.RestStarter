@@ -8,6 +8,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json.Converters;
 using Serilog;
+using Swashbuckle.AspNetCore.SwaggerGen;
 using System;
 using System.Text;
 
@@ -15,7 +16,7 @@ namespace Bee.RestStarter
 {
     public static class RestStarter
     {
-                
+
         public static string CorsPolicyName = "LowCorsPolicy";
         public static string SwaggerAppName = "App";
         public static string SwaggerAppVersion = "V1";
@@ -66,7 +67,7 @@ namespace Bee.RestStarter
 
             if (ShouldConfigureCors)
             {
-            app.UseCors(CorsPolicyName);
+                app.UseCors(CorsPolicyName);
             }
 
             if (UseSerilog)
@@ -83,13 +84,45 @@ namespace Bee.RestStarter
 
         public static void ConfigureLogger()
         {
-            Log.Logger =  new LoggerConfiguration().ReadFrom.Configuration(Configuration).CreateLogger();
+            Log.Logger = new LoggerConfiguration().ReadFrom.Configuration(Configuration).CreateLogger();
         }
 
         private static void ConfigureSwagger(IServiceCollection services)
         {
             if (!ShouldConfigureSwagger) return;
-            services.AddSwaggerGen(c => c.SwaggerDoc(SwaggerAppVersion, new OpenApiInfo { Title = SwaggerAppName, Version = SwaggerAppVersion }));
+            services.AddSwaggerGen(c =>
+            {
+                c.SwaggerDoc(SwaggerAppVersion, new OpenApiInfo { Title = SwaggerAppName, Version = SwaggerAppVersion });
+
+                ConfigureJwtForSwagger(c);
+            });
+        }
+
+        private static void ConfigureJwtForSwagger(SwaggerGenOptions c)
+        {
+            if (!ShouldConfigureJWT) return;
+            // Include 'SecurityScheme' to use JWT Authentication
+            var jwtSecurityScheme = new OpenApiSecurityScheme
+            {
+                Scheme = "bearer",
+                BearerFormat = "JWT",
+                Name = "JWT Authentication",
+                In = ParameterLocation.Header,
+                Type = SecuritySchemeType.Http,
+                Description = "Put **_ONLY_** your JWT Bearer token on textbox below!",
+
+                Reference = new OpenApiReference
+                {
+                    Id = JwtBearerDefaults.AuthenticationScheme,
+                    Type = ReferenceType.SecurityScheme
+                }
+            };
+            c.AddSecurityDefinition(jwtSecurityScheme.Reference.Id, jwtSecurityScheme);
+
+            c.AddSecurityRequirement(new OpenApiSecurityRequirement
+                    {
+                        { jwtSecurityScheme, Array.Empty<string>() }
+                    });
         }
 
         private static void ConfigureJWT(IServiceCollection services)
